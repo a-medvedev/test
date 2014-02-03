@@ -5,13 +5,31 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 public class Loader {
-    private Map<Application, Set<String>> appMap;
+    private final Map<Application, Set<String>> appMap;
+
+    public Loader(){
+        appMap = new HashMap<Application, Set<String>>();
+    }
+
+    public Map<Application, Set<String>> getAppMap(){
+        return this.appMap;
+    }
 
     public void generateAppMap(int appCount){
         if (appCount < 1){
             return;
         } else {
+            List<Application> currentList = generateAppList(1000000);
 
+            for (Application a : currentList){
+                if (appMap.containsKey(a)){
+                    appMap.get(a).add(a.getCountry());
+                } else {
+                    Set<String> currentCountries = new HashSet<String>();
+                    currentCountries.add(a.getCountry());
+                    appMap.put(a, currentCountries);
+                }
+            }
         }
     }
 
@@ -21,7 +39,7 @@ public class Loader {
         //Создаем список для всех приложений сразу, размерностью равной кол-ву приложений
         List<Application> result = new ArrayList<Application>(appCount);
         for (int i = 0; i < appCount; i++){
-
+            result.add(generateApp());
         }
         return result;
     }

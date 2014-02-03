@@ -1,8 +1,7 @@
 package DBHighLoader;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * User: tantal
@@ -10,21 +9,9 @@ import java.io.IOException;
  * Time: 11:43
  */
 public class Launcher {
-    public static void main(String[] args) throws IOException {
-        File existedIds = new File("src/DBHighLoader/existedIds.txt");
-        if (!existedIds.exists()){
-            try {
-                existedIds.createNewFile();
-            } catch (IOException e) {
-                //do nothing
-            }
-        }
+    public static void main(String[] args) {
         Loader l = new Loader();
-        FileWriter fw = new FileWriter(existedIds, true);
-        for (int i = 0; i < 100000; i++){
-            fw.write(l.generateId(15));
-            fw.write("\n");
-        }
-        fw.close();
+        l.generateAppMap(1000000);
+        Map<Application, Set<String>> appMap = l.getAppMap();
     }
 }

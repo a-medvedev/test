@@ -49,4 +49,16 @@ public class Application {
     public void setCountry(String country) {
         this.country = country;
     }
+
+    @Override
+    public boolean equals(Object o){
+        Application a = (Application) o;
+        if (this.id.equals(a.getId())){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
 }
