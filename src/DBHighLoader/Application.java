@@ -9,6 +9,8 @@ public class Application {
     private String id;
     private String url;
     private Long addingDate;
+    private String country;
+
 
     public Application(){
         id = "";
@@ -38,5 +40,13 @@ public class Application {
 
     public void setAddingDate(Long addingDate) {
         this.addingDate = addingDate;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
     }
 }
