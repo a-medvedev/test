@@ -16,6 +16,7 @@ public class Launcher {
 //        Loader l = new Loader();
 //        l.generateAppMap(1000000);
 //        Map<Application, Set<String>> appMap = l.getAppMap();
+        System.currentTimeMillis();
         Connector conn = new Connector("localhost", "parser", "secret", "google_parser", "5432", "psql");
         Connection c = conn.getConnection();
         Statement st = null;
@@ -72,26 +73,99 @@ public class Launcher {
         }
 
         //подготовленные запросы для вставки приложения
+        PreparedStatement addCountryAppStatement = null;
+        PreparedStatement insertStatement = null;
+        //PreparedStatement selectCountryStatement = null;
         try {
-            PreparedStatement insertStatement = c.prepareStatement("insert into apps (id, url, adding_date) values (?, ?, ?);");
-            PreparedStatement selectCountryStatement = c.prepareStatement("select id from countries where country = ?;");
-            PreparedStatement addCountryStatement = c.prepareStatement("insert into apps_countries (app_id, country_id) values (?, ?);");
+            insertStatement = c.prepareStatement("insert into apps (id, url, adding_date) values (?, ?, ?);");
+            //selectCountryStatement = c.prepareStatement("select id from countries where country = ?;");
+            addCountryAppStatement = c.prepareStatement("insert into apps_countries (app_id, country_id) values (?, (select id from countries where name = ?));");
         } catch (SQLException e) {
             System.out.println("Создание подготовленных запросов для вставки не удалось. Причина: ");
             System.out.println(e.getMessage());
         }
 
-        ResultSet rsForInsert = st.executeQuery();
-        //вставка приложения в основную таблицу
+        //получение всех приложений, подготовленных ко вставке в виде ResultSet для последующих манипуляций
+        ResultSet rsForInsert = null;
+        try{
+            rsForInsert = st.executeQuery("select id, adding_date, url, country from insert_apps;");
+        } catch (SQLException e) {
+            System.out.println("Невозможно получить приложения для вставки. Причина: ");
+            System.out.println(e.getMessage());
+        }
 
+        //устанавливаем автокоммит в false, для пакетной обработки запросов к БД
+        try {
+            c.setAutoCommit(false);
+        } catch (SQLException e) {
+            //do nothing
+        }
+
+        //вставка приложения в основную таблицу
+        if (rsForInsert != null){
+            //осуществляем проход по Result Set для вставки приложений
+            try{
+                while(rsForInsert.next()){
+                    String country = rsForInsert.getString("country");
+                    String id = rsForInsert.getString("id");
+                    String url = rsForInsert.getString("url");
+                    Float addingDate = rsForInsert.getFloat("adding_date");
+                    insertStatement.setString(1, id);
+                    insertStatement.setString(2, url);
+                    insertStatement.setFloat(3, addingDate);
+                    try {
+                        insertStatement.execute();
+                    } catch (SQLException e) {
+                        System.out.println("Добавление приложения в БД не удалось. Причина: ");
+                        System.out.println(e.getMessage());
+                    }
+
+                    addCountryAppStatement.setString(1, id);
+                    addCountryAppStatement.setString(2, country);
+                    try {
+                        addCountryAppStatement.execute();
+                    } catch (SQLException e) {
+                        System.out.println("Добавление связи приложение-страна в БД не удалось. Причина: ");
+                        System.out.println(e.getMessage());
+                    }
+                }
+            } catch (SQLException e) {
+                System.out.println("Добавление в БД не удалось. Причина: ");
+                System.out.println(e.getMessage());
+            }
+        }
+
+        //отправляем запросы на сервер БД
+        try {
+            c.commit();
+            rsForInsert.close();
+        } catch (SQLException e) {
+            System.out.println("Невозможно отослать запросы на сервер. Причина: ");
+            System.out.println(e.getMessage());
+        }
 
         //создаем таблицу приложений для обновления
         try {
             st.execute("drop table if exists update_apps;");
             st.execute("create table update_apps as select * from tmp_apps where id in (select id from tmp_apps_id);");
         } catch (SQLException e) {
-
+            System.out.println("Создание таблицы приложений для обновления не удалось. Причина: ");
+            System.out.println(e.getMessage());
         }
+
+        ResultSet rsForUpdate = null;
+        try {
+            rsForUpdate = st.executeQuery("select id, adding_date, url, country from update_apps;");
+        } catch (SQLException e) {
+            System.out.println("Выборка приложения для обновления не удалась. Причина:\n" + e.getMessage());
+        }
+
+        if (rsForUpdate != null){
+            while (rsForUpdate.next()){
+                String country =
+            }
+        }
+
 
         //удаляем временные таблицы
         try{
